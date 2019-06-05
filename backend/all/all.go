@@ -29,4 +29,5 @@ import (
 	_ "github.com/ncw/rclone/backend/union"
 	_ "github.com/ncw/rclone/backend/webdav"
 	_ "github.com/ncw/rclone/backend/yandex"
+	_ "github.com/rchiechi/rclone/backend/putio"
 )
