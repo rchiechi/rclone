@@ -2,32 +2,32 @@
 package putio
 
 import (
-	"bufio"
-	"bytes"
-	"crypto/sha1"
+	//	"bufio"
+	//	"bytes"
+	//	"crypto/sha1"
 	"fmt"
-	gohash "hash"
-	"io"
-	"net/http"
-	"path"
-	"regexp"
-	"strconv"
-	"strings"
-	"sync"
+	//	gohash "hash"
+	//	"io"
+	//	"net/http"
+	//	"path"
+	//	"regexp"
+	//	"strconv"
+	//	"strings"
+	//	"sync"
+	"context"
 	"time"
-
 	//    "github.com/ncw/rclone/backend/b2/api"
 	"github.com/ncw/rclone/fs"
-	"github.com/ncw/rclone/fs/accounting"
+	//	"github.com/ncw/rclone/fs/accounting"
 	"github.com/ncw/rclone/fs/config/configmap"
-	"github.com/ncw/rclone/fs/config/configstruct"
-	"github.com/ncw/rclone/fs/fserrors"
-	"github.com/ncw/rclone/fs/fshttp"
-	"github.com/ncw/rclone/fs/hash"
-	"github.com/ncw/rclone/fs/walk"
-	"github.com/ncw/rclone/lib/pacer"
-	"github.com/ncw/rclone/lib/rest"
-	"github.com/pkg/errors"
+	//	"github.com/ncw/rclone/fs/config/configstruct"
+	//	"github.com/ncw/rclone/fs/fserrors"
+	//	"github.com/ncw/rclone/fs/fshttp"
+	//	"github.com/ncw/rclone/fs/hash"
+	//	"github.com/ncw/rclone/fs/walk"
+	//	"github.com/ncw/rclone/lib/pacer"
+	//	"github.com/ncw/rclone/lib/rest"
+	//	"github.com/pkg/errors"
 	putioapi "github.com/putdotio/go-putio/putio"
 	"golang.org/x/oauth2"
 )
@@ -63,9 +63,9 @@ func init() {
 
 // Fs represents a remote putio endpoint
 type Fs struct {
-	name string        // name of this remote
-	srv  *putio.Client // the connection to the putio API
-	root string        // root directory
+	name string           // name of this remote
+	srv  *putioapi.Client // the connection to the putio API
+	root string           // root directory
 }
 
 // Object describes a putio object
@@ -83,20 +83,20 @@ type Fs struct {
 
 //https://github.com/putdotio/go-putio/blob/master/putio/types.go
 type Object struct {
-	fs                *Fs    // what this object is part of
-	ID                int64  `json:"id"`
-	Name              string `json:"name"`
-	Size              int64  `json:"size"`
-	ContentType       string `json:"content_type"`
-	CreatedAt         *Time  `json:"created_at"`
-	FirstAccessedAt   *Time  `json:"first_accessed_at"`
-	ParentID          int64  `json:"parent_id"`
-	Screenshot        string `json:"screenshot"`
-	OpensubtitlesHash string `json:"opensubtitles_hash"`
-	IsMP4Available    bool   `json:"is_mp4_available"`
-	Icon              string `json:"icon"`
-	CRC32             string `json:"crc32"`
-	IsShared          bool   `json:"is_shared"`
+	fs                *Fs       // what this object is part of
+	ID                int64     `json:"id"`
+	Name              string    `json:"name"`
+	Size              int64     `json:"size"`
+	ContentType       string    `json:"content_type"`
+	CreatedAt         time.Time `json:"created_at"`
+	FirstAccessedAt   time.Time `json:"first_accessed_at"`
+	ParentID          int64     `json:"parent_id"`
+	Screenshot        string    `json:"screenshot"`
+	OpensubtitlesHash string    `json:"opensubtitles_hash"`
+	IsMP4Available    bool      `json:"is_mp4_available"`
+	Icon              string    `json:"icon"`
+	CRC32             string    `json:"crc32"`
+	IsShared          bool      `json:"is_shared"`
 }
 
 //	NewFs func(name string, root string, config configmap.Mapper) (Fs, error) `json:"-"`
@@ -106,11 +106,11 @@ func NewFs(name string, root string, config configmap.Mapper) (fs.Fs, error) {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: config.Get(OAuthToken)})
 	oauthClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 
-	client := putio.NewClient(oauthClient)
+	client := putioapi.NewClient(oauthClient)
 
-	root, err := client.Files.Get(context.Background(), rootDir)
+	rootfs, err := client.Files.Get(context.Background(), rootDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	root = client.Get(rootID).name
