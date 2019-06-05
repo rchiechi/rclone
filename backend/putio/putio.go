@@ -16,9 +16,7 @@ import (
 	"sync"
 	"time"
 
-//    "github.com/ncw/rclone/backend/b2/api"
-    "golang.org/x/oauth2"
-    putioapi "github.com/putdotio/go-putio/putio"
+	//    "github.com/ncw/rclone/backend/b2/api"
 	"github.com/ncw/rclone/fs"
 	"github.com/ncw/rclone/fs/accounting"
 	"github.com/ncw/rclone/fs/config/configmap"
@@ -30,21 +28,24 @@ import (
 	"github.com/ncw/rclone/lib/pacer"
 	"github.com/ncw/rclone/lib/rest"
 	"github.com/pkg/errors"
-)
-// https://github.com/cenkalti/putio.py/blob/master/putiopy.py
-const (
-    api_base            = "https://api.put.io/v2"
-    upload_base         = "https://upload.put.io"
-    base_url            = api_base
-    upload_url          = upload_base + "/v2/files/upload"
-    tus_upload_url      = upload_base + "/files/"
-    access_token_url    = api_base + "/oauth2/access_token"
-    authentication_url  = api_base + "/oauth2/authenticate"
-    authorization_url   = api_base + "/oauth2/authorizations/clients/%s/%s"
-	defaultEndpoint     = "https://api.put.io/v2"
-	rootDir             = 0
+	putioapi "github.com/putdotio/go-putio/putio"
+	"golang.org/x/oauth2"
 )
 
+// https://github.com/cenkalti/putio.py/blob/master/putiopy.py
+const (
+	api_base           = "https://api.put.io/v2"
+	upload_base        = "https://upload.put.io"
+	base_url           = api_base
+	upload_url         = upload_base + "/v2/files/upload"
+	tus_upload_url     = upload_base + "/files/"
+	access_token_url   = api_base + "/oauth2/access_token"
+	authentication_url = api_base + "/oauth2/authenticate"
+	authorization_url  = api_base + "/oauth2/authorizations/clients/%s/%s"
+	defaultEndpoint    = "https://api.put.io/v2"
+	rootDir            = 0
+	OAuthToken         = "access_token"
+)
 
 // Register with Fs
 func init() {
@@ -54,18 +55,17 @@ func init() {
 		NewFs:       NewFs,
 		Options: []fs.Option{{
 			Name:     "access_token",
-            Help:     "put.io oath token (get one here:https://app.put.io/settings/account/oauth/apps)",
-			Required: true
-		}}
+			Help:     "put.io oath token (get one here:https://app.put.io/settings/account/oauth/apps)",
+			Required: true,
+		}},
+	})
 }
-
-
 
 // Fs represents a remote putio endpoint
 type Fs struct {
-	name          string                       // name of this remote
-	srv           *putio.Client                // the connection to the putio API
-    root          string                       // root directory
+	name string        // name of this remote
+	srv  *putio.Client // the connection to the putio API
+	root string        // root directory
 }
 
 // Object describes a putio object
@@ -81,10 +81,9 @@ type Fs struct {
 //    extension string   // File extension
 //}
 
-
 //https://github.com/putdotio/go-putio/blob/master/putio/types.go
 type Object struct {
-	fs       *Fs       // what this object is part of
+	fs                *Fs    // what this object is part of
 	ID                int64  `json:"id"`
 	Name              string `json:"name"`
 	Size              int64  `json:"size"`
@@ -100,28 +99,26 @@ type Object struct {
 	IsShared          bool   `json:"is_shared"`
 }
 
-
-
 //	NewFs func(name string, root string, config configmap.Mapper) (Fs, error) `json:"-"`
 
 // NewFs constructs an Fs from the path, container:path
 func NewFs(name string, root string, config configmap.Mapper) (fs.Fs, error) {
-    tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: config.Get('access_token')})
-    oauthClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: config.Get(OAuthToken)})
+	oauthClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 
-    client := putio.NewClient(oauthClient)
+	client := putio.NewClient(oauthClient)
 
-    root, err := client.Files.Get(context.Background(), rootDir)
-    if err != nil {
-        return err
-    }
+	root, err := client.Files.Get(context.Background(), rootDir)
+	if err != nil {
+		return err
+	}
 
 	root = client.Get(rootID).name
 
 	f := &Fs{
-		name:   name,
-		root:   root,
-		srv:    client
+		name: name,
+		root: root,
+		srv:  client,
 	}
 	f.features = (&fs.Features{
 		CaseInsensitive:         false,
@@ -137,5 +134,3 @@ func NewFs(name string, root string, config configmap.Mapper) (fs.Fs, error) {
 func (f *Object) IsDir() bool {
 	return f.ContentType == "application/x-directory"
 }
-
-
